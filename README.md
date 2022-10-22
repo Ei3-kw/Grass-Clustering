@@ -10,8 +10,10 @@ Assumptions:
 - all species want to maximise their occupied area (i.e. there is no waste land at the end?)
 
 Case study:
+
 The Qin Great Wall sits on the 400ml annual rainfall line in China. As agricultural civilization requires >=400 annual rainfall to maintain, this is the border line formed by the millennia of running-in between farming agricultural and nomadic civilization.
 
 Algorithms:
+
 To find a seperate line between two areas, we can spread out individuals and group em into two groups. These two groups are filtered according to the parameters given. The living conditions are different btwn groups and the same within one group. If an individual is exposed to non-suitable condition, it will stop repreducing and die off after a while. Since both groups are trying to maximise their area, the line btwn the two groups will be approx the seperate line after it converges.
 
