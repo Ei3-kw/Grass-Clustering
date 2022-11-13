@@ -17,3 +17,11 @@ Algorithms:
 
 To find a seperate line between two areas, we can spread out individuals and group em into two groups. These two groups are filtered according to the parameters given. The living conditions are different btwn groups and the same within one group. If an individual is exposed to non-suitable condition, it will stop repreducing and die off after a while. Since both groups are trying to maximise their area, the line btwn the two groups will be approx the seperate line after it converges.
 
+Update:
+
+1.0
+- Plant has different stages, only spread after mature
+- Multi season VS single season plant, single season plant dies after reaching max stage whereas multi season ones continue living
+- Multiple plants are allowed on the same tile with higher dying rate due to competition
+- Each tile is represented by the most mature (max(current stage/ max stage)) plant on it
+- If two or more plants are equally mature, multi season > single season
