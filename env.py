@@ -1,6 +1,8 @@
 import random
 import uuid
 import copy
+import json
+# import pandas as pd
 
 # constants
 BEST_GROWTH_RATE = 1
@@ -143,7 +145,7 @@ class Plant(object):
 
 class Tile(object):
 
-    def __init__(self, lv, coord: tuple, plants=[]):
+    def __init__(self, lv, coord: int, plants=[]):
         self.lv = lv
         self.coord = coord
         self.plants = plants
@@ -163,7 +165,7 @@ class Tile(object):
     def get_plants(self):
         return self.plants
 
-    def add_plants(self, plant):
+    def add_plant(self, plant):
         self.plants.append(plant)
 
     def remove_dead_plants(self):
@@ -212,10 +214,40 @@ class Tile(object):
 class Grid(object):
 
     def __init__(self, file_name):
-        self.file_name = file_name
+        # file = pd.read_json(file_name)
+        with open(file_name) as file:
+            data = json.load(file)
+            self.dim_x = data["dim_x"]
+            self.dim_y = data["dim_y"]
 
-        
+            p1 = data["plant1"]
+            p2 = data["plant2"]
 
-        
-        
+            self.tiles = []
+            i = 0
+            for lv in data["grid"]:
+                t = Tile(lv, i)
+                if random.uniform(0, 1) < 0.2:
+                    t.add_plant(
+                        Plant(p1["name"], 
+                            uuid4(), 
+                            tuple(p1["best_low"], p1["best_high"]), 
+                            tuple(p1["live_low"], p1["live_high"]),
+                            p1["max_stage"],
+                            p1["mature_stage"],
+                            p1["multi_season"]))
+                elif random.uniform(0, 1) < 0.4:
+                    t.add_plant(
+                        Plant(p2["name"], 
+                            uuid4(), 
+                            tuple(p2["best_low"], p2["best_high"]), 
+                            tuple(p2["live_low"], p2["live_high"]),
+                            p2["max_stage"],
+                            p2["mature_stage"],
+                            p2["multi_season"]))
+                self.tiles.append(t)
+                i += 1
 
+    def render(self):
+        for tile in self.tiles:
+            
