@@ -2,6 +2,7 @@ import random
 import copy
 import json
 from uuid import uuid4
+import functools
 # import pandas as pd
 
 # constants
@@ -227,7 +228,7 @@ class Tile(object):
 
     def get_most_mature_plant(self):
         try:
-            return self.plants.sort(key=self.compare, reverse=True)[0]
+            return sorted(self.plants, key=functools.cmp_to_key(self.compare), reverse=True)[0]
         except IndexError as e:
             pass
 
@@ -276,12 +277,10 @@ class Grid(object):
 
     def render(self):
         grid_repr = f"current step: {self.step}\n"
-
         # horizontal coord
         for i in range(self.dim_x):
             grid_repr += f"{VERTICAL_WALL} {i+1} "
         grid_repr += VERTICAL_WALL
-
         horizontal_border = (CORNER + HORIZONTAL_WALL * CELL_SIZE) * self.dim_x\
                             + CORNER + "\n"
         grid_repr += f"\n{horizontal_border}"
@@ -298,6 +297,7 @@ class Grid(object):
                 grid_repr += f" {content} {VERTICAL_WALL}"
             grid_repr += f" {row+1}\n{horizontal_border}"
         print(grid_repr, end="")
+
 
     def step(self):
         self.step += 1
