@@ -13,6 +13,13 @@ LIVE_SPREAD_RATE = 0
 LIVE_DEATH_RATE = 0.3
 DEATH_RATE = 0.8
 
+# Grid display elements
+HORIZONTAL_WALL = "-"
+VERTICAL_WALL = "|"
+CORNER = "+"
+EMPTY = " "
+CELL_SIZE = 3
+
 class Plant(object):
 
     def __init__(
@@ -32,7 +39,7 @@ class Plant(object):
         self.mature_stage = mature_stage
         self.current_stage = 0
         self.multi_season = multi_season
-        self.dead = False
+        # self.dead = False
 
     def get_name(self):
         return self.name
@@ -100,8 +107,8 @@ class Plant(object):
             return LIVE_DEATH_RATE
         return DEATH_RATE
 
-    def get_dead(self):
-        return self.dead
+    # def get_dead(self):
+    #     return self.dead
 
     def grow(self, env_lv):
         """
@@ -135,8 +142,11 @@ class Plant(object):
         Args:
             env_lv (int): lv of the environment
             num_plants (int): number of plants on the same grid
+
+        Returns:
+            [bool]: end or not
         """
-        self.dead = random.uniform(0, 1)/num_plants < self.get_death_rate(self, env_lv)\
+        return random.uniform(0, 1)/sqrt(num_plants) < self.get_death_rate(self, env_lv)\
             or (self.current_stage > self.max_stage and not self.multi_season)
 
     def __str__(self):
@@ -171,7 +181,7 @@ class Tile(object):
     def remove_dead_plants(self):
         plants = copy.deepcopy(self.plants)
         for p in plants:
-            if p.get_dead():
+            if p.end():
                 self.plants.remove(p)
 
     def compare(self, p1, p2):
@@ -210,6 +220,10 @@ class Tile(object):
         except IndexError as e:
             pass
 
+    def grow(self):
+        for p in plants:
+            p.grow(self.lv)
+
 
 class Grid(object):
 
@@ -217,8 +231,9 @@ class Grid(object):
         # file = pd.read_json(file_name)
         with open(file_name) as file:
             data = json.load(file)
-            self.dim_x = data["dim_x"]
-            self.dim_y = data["dim_y"]
+            self.step = 0
+            self.dim_x = int(data["dim_x"])
+            self.dim_y = int(data["dim_y"])
 
             p1 = data["plant1"]
             p2 = data["plant2"]
@@ -249,5 +264,42 @@ class Grid(object):
                 i += 1
 
     def render(self):
+        grid_repr = f"current step: {self.step}\n"
+
+        # horizontal coord
+        for i in range(self.dim_x):
+            grid_repr += f"{VERTICAL_WALL} {i+1} "
+        grid_repr += VERTICAL_WALL
+
+        horizontal_border = (CORNER + HORIZONTAL_WALL * CELL_SIZE) * self.dim_x\
+                            + CORNER + "\n"
+        grid_repr += f"\n{horizontal_border}"
+
+        for row in range(self.dim_y):
+            grid_repr += VERTICAL_WALL
+            for col in range(self.dim_x):
+                index = col + row * self.dim_x
+                plant = self.tiles[index].get_most_mature_plant()
+                if plant != None:
+                    content = str(plant)
+                else:
+                    content = EMPTY
+                grid_repr += f" {content} {VERTICAL_WALL}"
+            grid_repr += f" {row+1}\n{horizontal_border}"
+        print(grid_repr, end="")
+
+    def step(self):
+        self.step += 1
         for tile in self.tiles:
+            # grow
+            tile.grow()
+        
+            # spread
             
+            
+            # end
+            tile.remove_dead_plants()
+
+
+
+
