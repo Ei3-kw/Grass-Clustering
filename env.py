@@ -1,7 +1,7 @@
 import random
-import uuid
 import copy
 import json
+from uuid import uuid4
 # import pandas as pd
 
 # constants
@@ -149,6 +149,17 @@ class Plant(object):
         return random.uniform(0, 1)/sqrt(num_plants) < self.get_death_rate(self, env_lv)\
             or (self.current_stage > self.max_stage and not self.multi_season)
 
+    def clone(self):
+        return Plant(
+            self.name,
+            uuid4(),
+            self.best_lv,
+            self.live_lv,
+            self.max_stage,
+            self.mature_stage,
+            self.multi_season
+            )
+
     def __str__(self):
         return self.name[0]
 
@@ -246,8 +257,8 @@ class Grid(object):
                     t.add_plant(
                         Plant(p1["name"], 
                             uuid4(), 
-                            tuple(p1["best_low"], p1["best_high"]), 
-                            tuple(p1["live_low"], p1["live_high"]),
+                            tuple((p1["best_low"], p1["best_high"])), 
+                            tuple((p1["live_low"], p1["live_high"])),
                             p1["max_stage"],
                             p1["mature_stage"],
                             p1["multi_season"]))
@@ -255,8 +266,8 @@ class Grid(object):
                     t.add_plant(
                         Plant(p2["name"], 
                             uuid4(), 
-                            tuple(p2["best_low"], p2["best_high"]), 
-                            tuple(p2["live_low"], p2["live_high"]),
+                            tuple((p2["best_low"], p2["best_high"])), 
+                            tuple((p2["live_low"], p2["live_high"])),
                             p2["max_stage"],
                             p2["mature_stage"],
                             p2["multi_season"]))
@@ -294,11 +305,37 @@ class Grid(object):
             # grow
             tile.grow()
         
+            # find nbhd that's inbound
+            coord = tile.get_coord()
+            nbhd = []
+            if coord - self.dim_x >= 0:
+                nbhd.append(coord-self.dim_x)
+            if coord + self.dim_x < self.dim_x*self.dim_y:
+                nbhd.append(coord+self.dim_x)
+            if coord%self.dim_x != 0:
+                nbhd.append(coord-1)
+            if coord%self.dim_x != self.dim_x+1:
+                nbhd.append(coord+1)
             # spread
-            
+            for p in tile.get_plants():
+                for c in nbhd:
+                    if p.spread(tile.get_lv()):
+                        self.tiles[c].add_plant(p.clone())
             
             # end
             tile.remove_dead_plants()
+
+def main():
+    grid = Grid("maps/pic1.json")
+    grid.render()
+    N = 100
+
+    for i in range(N):
+        grid.step()
+        grid.render()
+
+if __name__ == '__main__':
+    main()
 
 
 
