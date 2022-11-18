@@ -16,4 +16,4 @@ if __name__ == '__main__':
             else:
                 s += str(int(random.uniform(sep, 765/N)))
             s += ','
-    print(s)
+    print(s[:-1:])

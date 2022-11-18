@@ -3,6 +3,7 @@ import copy
 import json
 from uuid import uuid4
 import functools
+from numpy import sqrt
 # import pandas as pd
 
 # constants
@@ -118,7 +119,7 @@ class Plant(object):
         Args:
             env_lv (int): lv of the environment
         """
-        if random.uniform(0, 1) < self.get_growth_rate(self, env_lv):
+        if random.uniform(0, 1) < self.get_growth_rate(env_lv):
             self.current_stage += 1
 
     def spread(self, env_lv):
@@ -132,7 +133,7 @@ class Plant(object):
         Returns:
             [bool]: spread or not
         """
-        return random.uniform(0, 1) < self.get_growth_rate(self, env_lv)\
+        return random.uniform(0, 1) < self.get_growth_rate(env_lv)\
             and self.current_stage >= self.mature_stage
 
     def end(self, env_lv, num_plants):
@@ -147,7 +148,7 @@ class Plant(object):
         Returns:
             [bool]: end or not
         """
-        return random.uniform(0, 1)/sqrt(num_plants) < self.get_death_rate(self, env_lv)\
+        return random.uniform(0, 1)/sqrt(num_plants) < self.get_death_rate(env_lv)\
             or (self.current_stage > self.max_stage and not self.multi_season)
 
     def clone(self):
@@ -163,6 +164,11 @@ class Plant(object):
 
     def __str__(self):
         return self.name[0]
+
+    def __eq__(self, other):
+        if (other == None):
+            return False
+        return self.plant_id == other.plant_id
 
 
 class Tile(object):
@@ -193,48 +199,23 @@ class Tile(object):
     def remove_dead_plants(self):
         plants = copy.deepcopy(self.plants)
         for p in plants:
-            if p.end():
+            if p.end(self.lv, self.get_num_plants()):
                 self.plants.remove(p)
-
-    def compare(self, p1, p2):
-        """
-        Comparing two plants by their maturity then if multiseason
-
-        more mature > less mature
-        multi season > single season
-        
-        Args:
-            p1 (Plant): [description]
-            p2 (Plant): [description]
-        
-        Returns:
-            number: 
-            -1: p1 < p2
-            1: p1 > p2
-            0: p1 = p2
-        """
-        p1_maturity = p1.get_current_stage()/p1.get_max_stage()
-        p2_maturity = p2.get_current_stage()/p2.get_max_stage()
-        if p1_maturity < p2_maturity:
-            return -1
-        elif p1_maturity > p2_maturity:
-            return 1
-        else:
-            if not p1.get_multi_season() and p2.get_multi_season():
-                return -1
-            if p1.get_multi_season() and not p2.get_multi_season():
-                return 1
-            return 0
 
     def get_most_mature_plant(self):
         try:
-            return sorted(self.plants, key=functools.cmp_to_key(self.compare), reverse=True)[0]
+            return sorted(self.plants, key=functools.cmp_to_key(compare), reverse=True)[0]
         except IndexError as e:
             pass
 
     def grow(self):
-        for p in plants:
+        for p in self.plants:
             p.grow(self.lv)
+
+    def __str__(self):
+        if self.get_most_mature_plant() == None:
+            return EMPTY
+        return str(self.get_most_mature_plant())
 
 
 class Grid(object):
@@ -275,6 +256,9 @@ class Grid(object):
                 self.tiles.append(t)
                 i += 1
 
+            for tile in self.tiles:
+                print(tile.get_num_plants())
+
     def render(self):
         grid_repr = f"current step: {self.step}\n"
         # horizontal coord
@@ -289,22 +273,18 @@ class Grid(object):
             grid_repr += VERTICAL_WALL
             for col in range(self.dim_x):
                 index = col + row * self.dim_x
-                plant = self.tiles[index].get_most_mature_plant()
-                if plant != None:
-                    content = str(plant)
-                else:
-                    content = EMPTY
-                grid_repr += f" {content} {VERTICAL_WALL}"
+                grid_repr += f" {str(self.tiles[index])} {VERTICAL_WALL}"
             grid_repr += f" {row+1}\n{horizontal_border}"
-        print(grid_repr, end="")
+        print(grid_repr)
 
 
-    def step(self):
+    def next_step(self):
         self.step += 1
         for tile in self.tiles:
+            print(tile.get_plants())
             # grow
             tile.grow()
-        
+            
             # find nbhd that's inbound
             coord = tile.get_coord()
             nbhd = []
@@ -325,13 +305,43 @@ class Grid(object):
             # end
             tile.remove_dead_plants()
 
+def compare(p1, p2):
+    """
+    Comparing two plants by their maturity then if multiseason
+
+    more mature > less mature
+    multi season > single season
+    
+    Args:
+        p1 (Plant): [description]
+        p2 (Plant): [description]
+    
+    Returns:
+        number: 
+        -1: p1 < p2
+        1: p1 > p2
+        0: p1 = p2
+    """
+    p1_maturity = p1.get_current_stage()/p1.get_max_stage()
+    p2_maturity = p2.get_current_stage()/p2.get_max_stage()
+    if p1_maturity < p2_maturity:
+        return -1
+    elif p1_maturity > p2_maturity:
+        return 1
+    else:
+        if not p1.get_multi_season() and p2.get_multi_season():
+            return -1
+        if p1.get_multi_season() and not p2.get_multi_season():
+            return 1
+        return 0
+
 def main():
-    grid = Grid("maps/pic1.json")
+    grid = Grid(input("map:"))
     grid.render()
-    N = 100
+    N = 1
 
     for i in range(N):
-        grid.step()
+        grid.next_step()
         grid.render()
 
 if __name__ == '__main__':
