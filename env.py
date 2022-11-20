@@ -166,14 +166,16 @@ class Plant(object):
         return self.name[0]
 
     def __eq__(self, other):
-        if (other == None):
+        if (other is None):
             return False
         return self.plant_id == other.plant_id
 
 
 class Tile(object):
 
-    def __init__(self, lv, coord: int, plants=[]):
+    def __init__(self, lv, coord: int, plants=None):
+        if plants is None:
+            plants = []
         self.lv = lv
         self.coord = coord
         self.plants = plants
@@ -213,7 +215,7 @@ class Tile(object):
             p.grow(self.lv)
 
     def __str__(self):
-        if self.get_most_mature_plant() == None:
+        if self.get_most_mature_plant() is None:
             return EMPTY
         return str(self.get_most_mature_plant())
 
@@ -232,9 +234,8 @@ class Grid(object):
             p2 = data["plant2"]
 
             self.tiles = []
-            i = 0
-            for lv in data["grid"]:
-                t = Tile(lv, i)
+            for i in range(len(data["grid"])):
+                t = Tile(data["grid"][i], i)
                 if random.uniform(0, 1) < 0.2:
                     t.add_plant(
                         Plant(p1["name"], 
@@ -254,10 +255,6 @@ class Grid(object):
                             p2["mature_stage"],
                             p2["multi_season"]))
                 self.tiles.append(t)
-                i += 1
-
-            for tile in self.tiles:
-                print(tile.get_num_plants())
 
     def render(self):
         grid_repr = f"current step: {self.step}\n"
@@ -281,7 +278,6 @@ class Grid(object):
     def next_step(self):
         self.step += 1
         for tile in self.tiles:
-            print(tile.get_plants())
             # grow
             tile.grow()
             
@@ -294,7 +290,7 @@ class Grid(object):
                 nbhd.append(coord+self.dim_x)
             if coord%self.dim_x != 0:
                 nbhd.append(coord-1)
-            if coord%self.dim_x != self.dim_x+1:
+            if coord%self.dim_x != self.dim_x-1:
                 nbhd.append(coord+1)
             # spread
             for p in tile.get_plants():
@@ -338,7 +334,7 @@ def compare(p1, p2):
 def main():
     grid = Grid(input("map:"))
     grid.render()
-    N = 1
+    N = 100
 
     for i in range(N):
         grid.next_step()
