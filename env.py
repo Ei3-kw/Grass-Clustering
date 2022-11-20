@@ -2,8 +2,10 @@ import random
 import copy
 import json
 from uuid import uuid4
-import functools
+from functools import cmp_to_key
+from itertools import filterfalse
 from numpy import sqrt
+import cProfile
 # import pandas as pd
 
 # constants
@@ -15,11 +17,24 @@ LIVE_SPREAD_RATE = 0
 LIVE_DEATH_RATE = 0.3
 DEATH_RATE = 0.8
 
+# colors
+PREFIX = "\033["
+RESET = f"{PREFIX}0m"
+BLACK = f"{PREFIX}30m"
+RED = f"{PREFIX}31m"        
+GREEN = f"{PREFIX}32m"      
+YELLOW = f"{PREFIX}33m"
+BLUE = f"{PREFIX}34m"
+MAGENTA = f"{PREFIX}35m"
+CYAN = f"{PREFIX}36m"
+WHITE = f"{PREFIX}37m"
+
+
 # Grid display elements
-HORIZONTAL_WALL = "-"
-VERTICAL_WALL = "|"
-CORNER = "+"
-EMPTY = " "
+HORIZONTAL_WALL = f"{WHITE}-"
+VERTICAL_WALL = f"{WHITE}|"
+CORNER = f"{WHITE}+"
+EMPTY = f"{WHITE} "
 CELL_SIZE = 3
 
 class Plant(object):
@@ -32,7 +47,8 @@ class Plant(object):
         live_lv: tuple, 
         max_stage: int, 
         mature_stage: int, 
-        multi_season: bool):
+        multi_season: bool,
+        color):
         self.name = name
         self.plant_id = plant_id
         self.best_lv = best_lv
@@ -41,6 +57,7 @@ class Plant(object):
         self.mature_stage = mature_stage
         self.current_stage = 0
         self.multi_season = multi_season
+        self.color = color
         # self.dead = False
 
     def get_name(self):
@@ -133,6 +150,8 @@ class Plant(object):
         Returns:
             [bool]: spread or not
         """
+        # if self.current_stage >= self.mature_stage:
+        #     return random.uniform(0, 1) < self.get_growth_rate(env_lv)
         return random.uniform(0, 1) < self.get_growth_rate(env_lv)\
             and self.current_stage >= self.mature_stage
 
@@ -152,6 +171,12 @@ class Plant(object):
             or (self.current_stage > self.max_stage and not self.multi_season)
 
     def clone(self):
+        """
+        create a plant with identical features except new uuid
+        
+        Returns:
+            Plant: a plant with identical features except new uuid
+        """
         return Plant(
             self.name,
             uuid4(),
@@ -159,11 +184,13 @@ class Plant(object):
             self.live_lv,
             self.max_stage,
             self.mature_stage,
-            self.multi_season
+            self.multi_season,
+            self.color
             )
 
     def __str__(self):
-        return self.name[0]
+        # colored first char of plant name
+        return self.color + self.name[0]
 
     def __eq__(self, other):
         if (other is None):
@@ -199,14 +226,23 @@ class Tile(object):
         self.plants.append(plant)
 
     def remove_dead_plants(self):
-        plants = copy.deepcopy(self.plants)
-        for p in plants:
-            if p.end(self.lv, self.get_num_plants()):
-                self.plants.remove(p)
+        """
+        iterate over the plants on the grid
+        and remove those who are dead
+        """
+        # plants = copy.deepcopy(self.plants)
+        # for p in plants:
+        #     if p.end(self.lv, self.get_num_plants()):
+        #         self.plants.remove(p)
+                
+        # self.plants[:] = filterfalse(determine, self.plants)
+        
+        # remove copy to save time
+        self.plants[:] = [p for p in self.plants if not p.end(self.lv, self.get_num_plants())]
 
     def get_most_mature_plant(self):
         try:
-            return sorted(self.plants, key=functools.cmp_to_key(compare), reverse=True)[0]
+            return sorted(self.plants, key=cmp_to_key(compare), reverse=True)[0]
         except IndexError as e:
             pass
 
@@ -233,9 +269,11 @@ class Grid(object):
             p1 = data["plant1"]
             p2 = data["plant2"]
 
+            # plant randomly initially
             self.tiles = []
             for i in range(len(data["grid"])):
                 t = Tile(data["grid"][i], i)
+                # 20% covered by plant1
                 if random.uniform(0, 1) < 0.2:
                     t.add_plant(
                         Plant(p1["name"], 
@@ -244,7 +282,9 @@ class Grid(object):
                             tuple((p1["live_low"], p1["live_high"])),
                             p1["max_stage"],
                             p1["mature_stage"],
-                            p1["multi_season"]))
+                            p1["multi_season"],
+                            WHITE))
+                # 20% covered by plant2
                 elif random.uniform(0, 1) < 0.4:
                     t.add_plant(
                         Plant(p2["name"], 
@@ -253,10 +293,13 @@ class Grid(object):
                             tuple((p2["live_low"], p2["live_high"])),
                             p2["max_stage"],
                             p2["mature_stage"],
-                            p2["multi_season"]))
+                            p2["multi_season"],
+                            CYAN))
                 self.tiles.append(t)
 
     def render(self):
+
+
         grid_repr = f"current step: {self.step}\n"
         # horizontal coord
         for i in range(self.dim_x):
@@ -334,14 +377,15 @@ def compare(p1, p2):
 def main():
     grid = Grid(input("map:"))
     grid.render()
-    N = 100
+    N = 20
 
     for i in range(N):
         grid.next_step()
         grid.render()
 
 if __name__ == '__main__':
-    main()
+    cProfile.run('main()')
+
 
 
 
