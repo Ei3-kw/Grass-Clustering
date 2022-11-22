@@ -25,3 +25,16 @@ Update:
 - Multiple plants are allowed on the same tile with higher dying rate due to competition
 - Each tile is represented by the most mature (max(current stage/ max stage)) plant on it
 - If two or more plants are equally mature, multi season > single season
+
+1.1
+- code runs faster now that deepcopy of the plant list is replaced
+- cProfile is added to check the performance
+
+TODOs
+- more than two species 
+- more than one seperating categories
+- use np matrix to keep track of tiles (can't do plants as each tile contains a list of plants)
+
+Possible applications:
+- Find seperating lines between relality and one's discription (in this case spread will not be plant reproduce but rather event progressing)
+- example: TODO
